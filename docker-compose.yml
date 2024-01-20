@@ -1,0 +1,41 @@
+version: "3.8"
+services:
+  nginx:
+    image: nginx:1.19.6-alpine
+    ports:
+      - "127.0.0.1:$AVATAR_API_PORT:80"
+    volumes:
+      - "$AVATARS_DIR:/usr/share/nginx/html/avatars"
+    restart: unless-stopped
+
+  avatars:
+    image: ghcr.io/cfc-servers/cfc_chat_transit_backend/avatar_service
+    build: ./avatar_service
+    command: flask run --host 0.0.0.0 --port 8080
+    container_name: chat_transit_avatar_service
+    ports:
+      - "127.0.0.1:$AVATAR_PORT:8080"
+    environment:
+      FLASK_APP: "service.py"
+      AVATAR_SERVICE_URL: $AVATAR_SERVICE_URL
+    volumes:
+      - "$AVATARS_DIR:/avatars:z"
+    restart: unless-stopped
+
+  relay:
+    image: ghcr.io/cfc-servers/cfc_chat_transit_backend/discord_relay
+    build: ./discord_relay
+    container_name: chat_transit_discord_relay
+    ports:
+      - "127.0.0.1:$RELAY_PORT:8080"
+    environment:
+      SENTRY_DSN: $SENTRY_DSN
+      VOICE_WEBHOOK_ID: $VOICE_WEBHOOK_ID
+      VOICE_WEBHOOK_SECRET: $VOICE_WEBHOOK_SECRET
+      DISCORD_TOKEN: $DISCORD_TOKEN
+      cfc3_WEBHOOK_ID: $cfc3_WEBHOOK_ID
+      cfc3_WEBHOOK_SECRET: $cfc3_WEBHOOK_SECRET
+      cfcttt_WEBHOOK_ID: $cfcttt_WEBHOOK_ID
+      cfcttt_WEBHOOK_SECRET: $cfcttt_WEBHOOK_SECRET
+
+    restart: unless-stopped
