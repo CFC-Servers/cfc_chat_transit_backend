@@ -12,7 +12,7 @@ func sendToServer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type ServerMessage struct {
-		ServerId string `json:"server_id"`
+		Realm   string `json:"realm"`
 		Content  string `json:"content"`
 	}
 
@@ -23,14 +23,14 @@ func sendToServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if msg.ServerId == "" || msg.Content == "" {
-		http.Error(w, "Missing server_id or content", http.StatusBadRequest)
+	if msg.Realm == "" || msg.Content == "" {
+		http.Error(w, "Missing realm or content", http.StatusBadRequest)
 		return
 	}
 
-	// Retrieve the websocket connection for the server
+	// Retrieve the websocket connection for the realm
 	wsConnectionsMutex.Lock()
-	wsConn, ok := wsConnections[msg.ServerId]
+	wsConn, ok := wsConnections[msg.Realm]
 	wsConnectionsMutex.Unlock()
 
 	if !ok {

@@ -2,6 +2,8 @@ package main
 
 import (
 	"log"
+	"os"
+	"strings"
 	"net/http"
 	"sync"
 	"time"
@@ -19,7 +21,9 @@ func handleRead(wsConn *wsConnection, serverId string, r *http.Request) {
 	defer func() {
 		c.Close()
 		wsConnectionsMutex.Lock()
-		delete(wsConnections, serverId)
+		if wsConnections[realm] == wsConn {
+			delete(wsConnections, realm)
+		}
 		wsConnectionsMutex.Unlock()
 	}()
 
@@ -63,7 +67,28 @@ func handleWrite(wsConn *wsConnection) {
 }
 
 var upgrader = websocket.Upgrader{}
+var allowedRealms = make(map[string]bool)
+var realmSecrets = make(map[string]string)
 var wsConnections = make(map[string]*wsConnection)
+
+func loadAllowedRealms() {
+	realms := os.Getenv("ALLOWED_REALMS")
+	if realms == "" {
+		log.Fatal("ALLOWED_REALMS environment variable not set")
+	}
+	for _, realm := range strings.Split(realms, ",") {
+		realm = strings.TrimSpace(realm)
+		allowedRealms[realm] = true
+
+		// Load the secret for the realm
+		secretEnvVar := fmt.Sprintf("REALM_%s_SECRET", strings.ToUpper(realm))
+		secret := os.Getenv(secretEnvVar)
+		if secret == "" {
+			log.Fatalf("Secret for realm '%s' not set in environment variable '%s'", realm, secretEnvVar)
+		}
+		realmSecrets[realm] = secret
+	}
+}
 var wsConnectionsMutex = &sync.Mutex{}
 
 func keepAlive(c *websocket.Conn, r *http.Request) {
@@ -93,10 +118,25 @@ func relay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get server ID from query parameter
-	serverId := r.URL.Query().Get("server_id")
-	if serverId == "" {
-		log.Println("No server ID provided")
+	// Get realm from query parameter
+	realm := r.URL.Query().Get("realm")
+	if realm == "" {
+		log.Println("No realm provided")
+		c.Close()
+		return
+	}
+
+	if !allowedRealms[realm] {
+		log.Printf("Realm '%s' is not allowed", realm)
+		c.Close()
+		return
+	}
+
+	authToken := r.URL.Query().Get("auth_token")
+	expectedToken := realmSecrets[realm]
+
+	if authToken != expectedToken {
+		log.Printf("Invalid auth token for realm '%s'", realm)
 		c.Close()
 		return
 	}
@@ -108,7 +148,11 @@ func relay(w http.ResponseWriter, r *http.Request) {
 
 	// Store the connection in the map
 	wsConnectionsMutex.Lock()
-	wsConnections[serverId] = wsConn
+	if existingConn, exists := wsConnections[realm]; exists {
+		log.Printf("Existing connection for realm '%s' found, closing it", realm)
+		existingConn.conn.Close()
+	}
+	wsConnections[realm] = wsConn
 	wsConnectionsMutex.Unlock()
 
 	// Start goroutines for handling the connection

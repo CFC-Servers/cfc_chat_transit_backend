@@ -20,6 +20,8 @@ func main() {
 
 	defer sentry.Flush(2 * time.Second)
 
+	loadAllowedRealms()
+
 	addr := flag.String("addr", "0.0.0.0:8080", "http service address")
 	flag.Parse()
 	http.HandleFunc("/send_to_server", sendToServer)
