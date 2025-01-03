@@ -69,7 +69,7 @@ func handleWrite(wsConn *wsConnection) {
 var upgrader = websocket.Upgrader{}
 var allowedRealms = make(map[string]bool)
 var realmSecrets = make(map[string]string)
-var gtdWsConnections = make(map[string]*wsConnection)
+var dtgWsConnections = make(map[string]*wsConnection)
 
 func loadAllowedRealms() {
 	realms := os.Getenv("ALLOWED_REALMS")
@@ -89,7 +89,7 @@ func loadAllowedRealms() {
 		realmSecrets[realm] = secret
 	}
 }
-var gtdWsConnectionsMutex = &sync.Mutex{}
+var dtgWsConnectionsMutex = &sync.Mutex{}
 
 func keepAlive(c *websocket.Conn, r *http.Request) {
 	ctx := r.Context()
