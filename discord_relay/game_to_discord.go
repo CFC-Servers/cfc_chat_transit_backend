@@ -2,8 +2,6 @@ package main
 
 import (
 	"log"
-	"os"
-	"strings"
 	"net/http"
 	"sync"
 	"time"
@@ -16,11 +14,14 @@ type wsConnection struct {
 	outgoing chan []byte
 }
 
+var gtdWsConnections = make(map[string]*wsConnection)
+var gtdWsConnectionsMutex = &sync.Mutex{}
+
 func handleRead(wsConn *wsConnection, serverId string, r *http.Request) {
 	c := wsConn.conn
 	defer func() {
 		c.Close()
-		wsConnectionsMutex.Lock()
+		gtdWsConnectionsMutex.Lock()
 		if gtdWsConnections[realm] == wsConn {
 			delete(gtdWsConnections, realm)
 		}
@@ -65,31 +66,6 @@ func handleWrite(wsConn *wsConnection) {
 		}
 	}
 }
-
-var upgrader = websocket.Upgrader{}
-var allowedRealms = make(map[string]bool)
-var realmSecrets = make(map[string]string)
-var gtdWsConnections = make(map[string]*wsConnection)
-
-func loadAllowedRealms() {
-	realms := os.Getenv("ALLOWED_REALMS")
-	if realms == "" {
-		log.Fatal("ALLOWED_REALMS environment variable not set")
-	}
-	for _, realm := range strings.Split(realms, ",") {
-		realm = strings.TrimSpace(realm)
-		allowedRealms[realm] = true
-
-		// Load the secret for the realm
-		secretEnvVar := fmt.Sprintf("REALM_%s_SECRET", strings.ToUpper(realm))
-		secret := os.Getenv(secretEnvVar)
-		if secret == "" {
-			log.Fatalf("Secret for realm '%s' not set in environment variable '%s'", realm, secretEnvVar)
-		}
-		realmSecrets[realm] = secret
-	}
-}
-var gtdWsConnectionsMutex = &sync.Mutex{}
 
 func keepAlive(c *websocket.Conn, r *http.Request) {
 	ctx := r.Context()
@@ -147,7 +123,7 @@ func relay(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Store the connection in the map
-	wsConnectionsMutex.Lock()
+	gtdWsConnectionsMutex.Lock()
 	if existingConn, exists := gtdWsConnections[realm]; exists {
 		log.Printf("Existing connection for realm '%s' found, closing it", realm)
 		existingConn.conn.Close()

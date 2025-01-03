@@ -24,7 +24,7 @@ func main() {
 
 	addr := flag.String("addr", "0.0.0.0:8080", "http service address")
 	flag.Parse()
-	http.HandleFunc("/send_to_server", sendToServer)
+	http.HandleFunc("/send_to_server", DiscordToGame_SendToServer)
 	//log.SetFlags(0)
 	http.HandleFunc("/relay", relay)
 

@@ -11,7 +11,7 @@ func sendToServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	type ServerMessage struct {
+	type DiscordToGameMessage struct {
 		Realm      string `json:"realm"`
 		SenderName string `json:"sender_name"`
 		ColorRGB   string `json:"color_rgb"` // Format: "R,G,B"
@@ -31,9 +31,9 @@ func sendToServer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Retrieve the websocket connection for the realm
-	wsConnectionsMutex.Lock()
-	wsConn, ok := wsConnections[msg.Realm]
-	wsConnectionsMutex.Unlock()
+	dtgWsConnectionsMutex.Lock()
+	wsConn, ok := dtgWsConnections[msg.Realm]
+	dtgWsConnectionsMutex.Unlock()
 
 	if !ok {
 		http.Error(w, "Server not connected", http.StatusNotFound)
@@ -71,7 +71,7 @@ func sendToServer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Server message buffer is full", http.StatusInternalServerError)
 	}
 }
-type WebsocketMessage struct {
+type DiscordToGameWebsocketMessage struct {
 	SenderName string `json:"sender_name"`
 	ColorRGB   string `json:"color_rgb"`
 	Content    string `json:"content"`
