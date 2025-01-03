@@ -12,8 +12,10 @@ func sendToServer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type ServerMessage struct {
-		Realm   string `json:"realm"`
-		Content  string `json:"content"`
+		Realm      string `json:"realm"`
+		SenderName string `json:"sender_name"`
+		ColorRGB   string `json:"color_rgb"` // Format: "R,G,B"
+		Content    string `json:"content"`
 	}
 
 	var msg ServerMessage
@@ -23,8 +25,8 @@ func sendToServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if msg.Realm == "" || msg.Content == "" {
-		http.Error(w, "Missing realm or content", http.StatusBadRequest)
+	if msg.Realm == "" || msg.Content == "" || msg.SenderName == "" || msg.ColorRGB == "" {
+		http.Error(w, "Missing realm, sender_name, color_rgb, or content", http.StatusBadRequest)
 		return
 	}
 
@@ -38,13 +40,39 @@ func sendToServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Send the message to the game server via the websocket connection
+	// Validate ColorRGB format
+	colorComponents := strings.Split(msg.ColorRGB, ",")
+	if len(colorComponents) != 3 {
+		http.Error(w, "Invalid color_rgb format. Expected format: R,G,B", http.StatusBadRequest)
+		return
+	}
+
+	// Create the websocket message
+	messageToSend := WebsocketMessage{
+		SenderName: msg.SenderName,
+		ColorRGB:   msg.ColorRGB,
+		Content:    msg.Content,
+	}
+
+	// Serialize the message to JSON
+	messageBytes, err := json.Marshal(messageToSend)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	// Send the message to the game server via the websocket
 	select {
-	case wsConn.outgoing <- []byte(msg.Content):
+	case wsConn.outgoing <- messageBytes:
 		// Message sent successfully
 		w.WriteHeader(http.StatusOK)
 	default:
 		// The outgoing channel is full
 		http.Error(w, "Server message buffer is full", http.StatusInternalServerError)
 	}
+}
+type WebsocketMessage struct {
+	SenderName string `json:"sender_name"`
+	ColorRGB   string `json:"color_rgb"`
+	Content    string `json:"content"`
 }
