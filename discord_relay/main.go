@@ -20,11 +20,10 @@ func main() {
 
 	defer sentry.Flush(2 * time.Second)
 
-	loadAllowedRealms()
-
 	addr := flag.String("addr", "0.0.0.0:8080", "http service address")
 	flag.Parse()
-	http.HandleFunc("/send_to_server", DiscordToGame_SendToServer)
+
+	http.HandleFunc("/send_to_server", sendToGameServer)
 	//log.SetFlags(0)
 	http.HandleFunc("/relay", relay)
 
