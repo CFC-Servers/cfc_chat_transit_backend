@@ -14,6 +14,7 @@ type RGB struct {
 
 // What we send to the game server
 type DiscordToGameWebsocketMessage struct {
+    MessageType string `json:"message_type"`
 	SenderName string `json:"sender_name"`
 	ColorRGB   RGB `json:"color_rgb"`
 	Content    string `json:"content"`
@@ -64,6 +65,7 @@ func sendToGameServer(w http.ResponseWriter, r *http.Request) {
 
 	// Create the websocket message
 	messageToSend := DiscordToGameWebsocketMessage{
+        MessageType: "chat",
 		SenderName: msg.SenderName,
         ColorRGB: msg.ColorRGB,
 		Content: msg.Content,
