@@ -25,7 +25,7 @@ func main() {
 
 	http.HandleFunc("/send_to_server", sendToGameServer)
 	//log.SetFlags(0)
-	http.HandleFunc("/relay", relay)
+	http.HandleFunc("/relay/{realm}/{secret}", relay)
 
 	go queueGroomer()
 	log.Fatal(http.ListenAndServe(*addr, nil))

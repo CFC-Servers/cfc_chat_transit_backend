@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
+	"strings"
+	"errors"
 
 	"github.com/gorilla/websocket"
 )
@@ -92,9 +94,28 @@ func keepAlive(c *websocket.Conn, r *http.Request) {
 	}
 }
 
+func GetRealmAndSecret(r *http.Request) (realm, secret string, err error) {
+	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+
+	if len(parts) != 3 || parts[0] != "relay" {
+		return "", "", errors.New("invalid URL format")
+	}
+
+	return parts[1], parts[2], nil
+}
+
+
 func relay(w http.ResponseWriter, r *http.Request) {
+    realm, secret, err := GetRealmAndSecret(r)
+    if err != nil {
+        log.Println("Invalid URL format")
+        http.Error(w, "Invalid URL format", http.StatusBadRequest)
+        return
+    }
+    log.Printf("Relay request for realm '%s'", realm)
+    log.Printf("Secret: '%s'", secret)
+
 	// Get realm from query parameter
-	realm := r.URL.Query().Get("realm")
 	if realm == "" {
 		log.Println("No realm provided")
 		http.Error(w, "No realm provided", http.StatusBadRequest)
@@ -107,10 +128,9 @@ func relay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authToken := r.URL.Query().Get("auth_token")
 	expectedToken := realmSecrets[realm]
 
-	if authToken != expectedToken {
+	if secret != expectedToken {
 		log.Printf("Invalid auth token for realm '%s'", realm)
 		http.Error(w, "Invalid auth token", http.StatusForbidden)
 		return
