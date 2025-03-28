@@ -125,6 +125,7 @@ func sendEvent(discord *discordgo.Session, event EventStruct, eventText string, 
 
 	realm := event.Realm
 	webhookInfo := webhook.Get(realm)
+	log.Println(webhookInfo)
 
 	message, err := discord.WebhookExecute(webhookInfo.ID, webhookInfo.Secret, true, params)
 
