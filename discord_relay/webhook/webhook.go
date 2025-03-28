@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"log"
 )
 
 type WebhookInfo struct {
@@ -28,6 +29,7 @@ func Get(realm string) *WebhookInfo {
 
 	id := os.Getenv(idEnv)
 	secret := os.Getenv(secretEnv)
+    log.Printf("Webhook: %s=%s, %s=%s", idEnv, id, secretEnv, secret)
 
 	info := &WebhookInfo{
 		ID:     id,
