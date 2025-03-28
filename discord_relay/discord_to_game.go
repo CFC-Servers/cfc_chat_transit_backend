@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"fmt"
 )
 
 type RGB struct {
@@ -16,7 +17,7 @@ type RGB struct {
 type DiscordToGameWebsocketMessage struct {
     MessageType string `json:"message_type"`
 	SenderName string `json:"sender_name"`
-	ColorRGB   RGB `json:"color_rgb"`
+	ColorRGB   string `json:"color_rgb"`
 	Content    string `json:"content"`
 }
 
@@ -24,7 +25,7 @@ type DiscordToGameWebsocketMessage struct {
 type DiscordToGameMessage struct {
     Realm      string `json:"realm"`
     SenderName string `json:"sender_name"`
-    ColorRGB   RGB `json:"color_rgb"`
+    ColorRGB   string `json:"color_rgb"`
     Content    string `json:"content"`
 }
 
@@ -44,6 +45,9 @@ func sendToGameServer(w http.ResponseWriter, r *http.Request) {
 	var msg DiscordToGameMessage
 	err := json.NewDecoder(r.Body).Decode(&msg)
 	if err != nil {
+	    fmt.Println(err)
+	    fmt.Println("Error decoding JSON")
+	    fmt.Println(r.Body)
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
