@@ -7,6 +7,7 @@ import (
 	"time"
 	"strings"
 	"errors"
+	"os"
 
 	"github.com/gorilla/websocket"
 )
@@ -16,14 +17,12 @@ var upgrader = websocket.Upgrader{}
 var allowedRealms = map[string]bool{
 	"cfc3": true,
 	"cfcttt": true,
-    "phatsodev": true,
 }
 
 // load from env?
 var realmSecrets = map[string]string{
-	"cfc3":  "cfc3_secret",
-	"cfcttt": "cfcttt_secret",
-    "phatsodev": "phatsodev_secret",
+	"cfc3":  os.Getenv("cfc3_SECRET"),
+	"cfcttt": os.Getenv("cfcttt_SECRET"),
 }
 
 type wsConnection struct {
