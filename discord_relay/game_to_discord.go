@@ -17,12 +17,14 @@ var upgrader = websocket.Upgrader{}
 var allowedRealms = map[string]bool{
 	"cfc3": true,
 	"cfcttt": true,
+    "cfcdev": true,
 }
 
 // load from env?
 var realmSecrets = map[string]string{
 	"cfc3":  os.Getenv("cfc3_SECRET"),
 	"cfcttt": os.Getenv("cfcttt_SECRET"),
+	"cfcdev": os.Getenv("cfcdev_SECRET"),
 }
 
 type wsConnection struct {

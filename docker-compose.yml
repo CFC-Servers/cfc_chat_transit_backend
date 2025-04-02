@@ -37,5 +37,7 @@ services:
       cfc3_WEBHOOK_SECRET: $cfc3_WEBHOOK_SECRET
       cfcttt_WEBHOOK_ID: $cfcttt_WEBHOOK_ID
       cfcttt_WEBHOOK_SECRET: $cfcttt_WEBHOOK_SECRET
+      cfcdev_WEBHOOK_ID: $cfcdev_WEBHOOK_ID
+      cfcdev_WEBHOOK_SECRET: $cfcdev_WEBHOOK_SECRET
 
     restart: unless-stopped
