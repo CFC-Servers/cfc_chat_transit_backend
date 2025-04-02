@@ -56,6 +56,11 @@ func handleRead(wsConn *wsConnection, realm string, r *http.Request) {
 			break
 		}
 
+		if len(message) == 9 && string(message) == "keepalive" {
+			continue
+		}
+
+
 		select {
 		case MessageQueue <- message:
 			// Message added to queue
@@ -78,22 +83,15 @@ func handleWrite(wsConn *wsConnection) {
 }
 
 func keepAlive(c *websocket.Conn, r *http.Request) {
-	ctx := r.Context()
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
-	for {
-		select {
-		case <-ticker.C:
-			err := c.WriteMessage(websocket.PingMessage, []byte("keepalive"))
-			if err != nil {
-				log.Print("Received an error when sending keepalive. Exiting keepalive loop")
-				return
-			}
-		case <-ctx.Done():
-			log.Print("Request context is done. Exiting keepalive loop")
-			return
-		}
+    for range ticker.C {
+        err := c.WriteMessage(websocket.PingMessage, []byte("keepalive"))
+        if err != nil {
+            log.Print("Received an error when sending keepalive. Exiting keepalive loop")
+            return
+        }
 	}
 }
 
