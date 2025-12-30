@@ -1,13 +1,13 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"net/http"
+	"os"
+	"strings"
 	"sync"
 	"time"
-	"strings"
-	"errors"
-	"os"
 
 	"github.com/gorilla/websocket"
 )
@@ -15,16 +15,18 @@ import (
 var upgrader = websocket.Upgrader{}
 
 var allowedRealms = map[string]bool{
-	"cfc3": true,
+	"cfc3":   true,
 	"cfcttt": true,
-    "cfcdev": true,
+	"cfcdev": true,
+	"glee":   true,
 }
 
 // load from env?
 var realmSecrets = map[string]string{
-	"cfc3":  os.Getenv("cfc3_SECRET"),
+	"cfc3":   os.Getenv("cfc3_SECRET"),
 	"cfcttt": os.Getenv("cfcttt_SECRET"),
 	"cfcdev": os.Getenv("cfcdev_SECRET"),
+	"glee":   os.Getenv("glee_SECRET"),
 }
 
 type wsConnection struct {
@@ -60,7 +62,6 @@ func handleRead(wsConn *wsConnection, realm string, r *http.Request) {
 			continue
 		}
 
-
 		select {
 		case MessageQueue <- message:
 			// Message added to queue
@@ -73,25 +74,25 @@ func handleRead(wsConn *wsConnection, realm string, r *http.Request) {
 func handleWrite(wsConn *wsConnection) {
 	c := wsConn.conn
 
-    for msg := range wsConn.outgoing {
-        err := c.WriteMessage(websocket.TextMessage, msg)
-        if err != nil {
-            log.Println("write:", err)
-            return
-        }
-    }
+	for msg := range wsConn.outgoing {
+		err := c.WriteMessage(websocket.TextMessage, msg)
+		if err != nil {
+			log.Println("write:", err)
+			return
+		}
+	}
 }
 
 func keepAlive(c *websocket.Conn, r *http.Request) {
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
-    for range ticker.C {
-        err := c.WriteMessage(websocket.PingMessage, []byte("keepalive"))
-        if err != nil {
-            log.Print("Received an error when sending keepalive. Exiting keepalive loop")
-            return
-        }
+	for range ticker.C {
+		err := c.WriteMessage(websocket.PingMessage, []byte("keepalive"))
+		if err != nil {
+			log.Print("Received an error when sending keepalive. Exiting keepalive loop")
+			return
+		}
 	}
 }
 
@@ -105,16 +106,15 @@ func GetRealmAndSecret(r *http.Request) (realm, secret string, err error) {
 	return parts[1], parts[2], nil
 }
 
-
 func relay(w http.ResponseWriter, r *http.Request) {
-    realm, secret, err := GetRealmAndSecret(r)
-    if err != nil {
-        log.Println("Invalid URL format")
-        http.Error(w, "Invalid URL format", http.StatusBadRequest)
-        return
-    }
-    log.Printf("Relay request for realm '%s'", realm)
-    log.Printf("Secret: '%s'", secret)
+	realm, secret, err := GetRealmAndSecret(r)
+	if err != nil {
+		log.Println("Invalid URL format")
+		http.Error(w, "Invalid URL format", http.StatusBadRequest)
+		return
+	}
+	log.Printf("Relay request for realm '%s'", realm)
+	log.Printf("Secret: '%s'", secret)
 
 	// Get realm from query parameter
 	if realm == "" {
